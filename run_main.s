@@ -6,6 +6,8 @@ format_str:             .string     " %s"
 format_int:             .string     " %d"
 pstrlen_sentence:       .string     "first pstring length: %d, second pstring length: %d\n"
 replaceChar_sentence:   .string     "old char: %c, new char: %c, first string: %s, second string: %s\n"
+default_sentence:       .string     "invalid option!\n"
+
 
 
 #jump table:
@@ -155,8 +157,10 @@ run_func:
     jmp .finished
 
 .L_default:
-    movq %rdi, %rsi
-    jmp .finished
+    movq    $default_sentence, %rdi     # give the format to print to %rdi
+    xorq    %rax, %rax                  # make %rax to 0
+    call    printf
+    jmp .finished                       # return to the finish of the function
 
 
 
