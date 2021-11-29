@@ -1,144 +1,138 @@
 #318528171 Itay Shwartz
 .section    .rodata
-format_char:  .string   " %c"
-format_str:   .string   " %s"
-format_int:   .string   " %d"
-pstrlen_sentence: .string "first pstring length: %d, second pstring length: %d\n"
-replaceChar_sentence:   .string "old char: %c, new char: %c, first string: %s, second string: %s\n"
+
+format_char:            .string     " %c"
+format_str:             .string     " %s"
+format_int:             .string     " %d"
+pstrlen_sentence:       .string     "first pstring length: %d, second pstring length: %d\n"
+replaceChar_sentence:   .string     "old char: %c, new char: %c, first string: %s, second string: %s\n"
 
 
 #jump table:
-.align 8        #align address to multiple of 8
-
+.align 8                    #align address to multiple of 8
 .JUMP_TABLE:
-    .quad .L_pstrlen      #case 50
-    .quad .L_default      #case 51
-    .quad .L_replaceChar  #case 52
-    .quad .L_pstrijcpy    #case 53
-    .quad .L_swapCase     #case 54
-    .quad .L_pstrijcmp    #case 55
-    .quad .L_default      #case 56
-    .quad .L_default      #case 57
-    .quad .L_default      #case 58
-    .quad .L_default      #case 59
-    .quad .L_pstrlen      #case 60
-    .quad .L_default      #default
+    .quad .L_pstrlen        #case 50
+    .quad .L_default        #case 51
+    .quad .L_replaceChar    #case 52
+    .quad .L_pstrijcpy      #case 53
+    .quad .L_swapCase       #case 54
+    .quad .L_pstrijcmp      #case 55
+    .quad .L_default        #case 56
+    .quad .L_default        #case 57
+    .quad .L_default        #case 58
+    .quad .L_default        #case 59
+    .quad .L_pstrlen        #case 60
+    .quad .L_default        #default
 
 .text
 
 .globl pstrlen
 .type pstrlen, @function
 pstrlen:
-    xorq    %rax, %rax  #we make sure that %rax is 0
-    movb    (%rdi), %al #return the size of 
+    xorq    %rax, %rax          #we make sure that %rax is 0
+    movb    (%rdi), %al         #return the size of 
     ret
     
 .globl replaceChar
 .type replaceChar, @function
-replaceChar:                # get *pstring %rdi, char1 (old) is in %rsi, char2 (new) in %rdx
-    push    %rbp           
+replaceChar:                    # get *pstring %rdi, char1 (old) is in %rsi, char2 (new) in %rdx
+    push    %rbp                #prepere the scope to this function
     movq    %rsp, %rbp
+    movq    %rdi, %rcx          #save the first address of %rdi in %rcx
     
-    movq    %rdi, %rcx
 .loop_replaceChar: 
-    incq %rdi               #now we point to the start of the string
-    cmpb $0, (%rdi)         #compare if we reach to the rnd of the string
-    je  .finish_replaceChar #if so we jump outside the loop and return
-    cmpb %sil, (%rdi)       #we check if the char in the string is equal to char1
-    jne .loop_replaceChar   #if not we continue in the loop
-    movb %dl, (%rdi)        #if yes, we move the char to the location in the string
-    jmp .loop_replaceChar   #we continue in the loop
+    incq %rdi                   #now we point to the start of the string
+    cmpb $0, (%rdi)             #compare if we reach to the rnd of the string
+    je  .finish_replaceChar     #if so we jump outside the loop and return
+    cmpb %sil, (%rdi)           #we check if the char in the string is equal to char1
+    jne .loop_replaceChar       #if not we continue in the loop
+    movb %dl, (%rdi)            #if yes, we move the char to the location in the string
+    jmp .loop_replaceChar       #we continue in the loop
     
 .finish_replaceChar:
     movq    %rcx, %rax
-    movq    %rbp, %rsp      #return #rsp to the start of the frame
-    pop     %rbp            #retun the %rbp to the address that he was before
+    movq    %rbp, %rsp          #return #rsp to the start of the frame
+    pop     %rbp                #retun the %rbp to the address that he was before
     ret
-
-  
-    
-
 
 
 .globl run_func
 .type run_func, @function
 run_func:
     subq    $50, %rdx                   # we arrange the input so that for 52 for example we get 2
-    cmpq    $10, %rdx                   #we check if the choice is outside the range
-    ja      .L_default                  #if it outside the range we jump to default
-    jmp     *.JUMP_TABLE(,%rdx,8)       #else we go to the jump tanle and jump to the relevant label
-    
-.finished:                              #we return from the function                                                         
+    cmpq    $10, %rdx                   # we check if the choice is outside the range
+    ja      .L_default                  # if it outside the range we jump to default
+    jmp     *.JUMP_TABLE(,%rdx,8)       # else we go to the jump tanle and jump to the relevant label
+.finished:                              # we return from the function                                                         
     ret
     
 .L_pstrlen:
-    call    pstrlen                     #calculate the len of pstring 1
-    movq    %rax, %r8                   #save the size of pstring1 in %r8
-    movq    %rsi, %rdi                  #swap that now %rdi point to pstring2
-    call    pstrlen                     #calculate the len of pstring 2
-    movq    %rax, %r9                   #save the size of pstring1 in %r9
+    call    pstrlen                     # calculate the len of pstring 1
+    movq    %rax, %r8                   # save the size of pstring1 in %r8
+    movq    %rsi, %rdi                  # swap that now %rdi point to pstring2
+    call    pstrlen                     # calculate the len of pstring 2
+    movq    %rax, %r9                   # save the size of pstring2 in %r9
     
     #printing
-    movq $pstrlen_sentence, %rdi        #we put the format in the first argument (%rdi) for printing
-    movq %r8, %rsi                      
-    movq %r9, %rdx
-    xorq %rax, %rax
-    call printf
-    ret
+    movq $pstrlen_sentence, %rdi        # we put the format in the first argument (%rdi) for printing
+    movq %r8, %rsi                      # we put the size of pstring1 in the second argument (%rdi) for printing
+    movq %r9, %rdx                      # we put the size of pstring2 in the third argument (%rdx) for printing
+    xorq %rax, %rax                     # make %rax 0
+    call printf                         # print
+    #ret    #we need it?
     jmp .finished
     
     
 .L_replaceChar:
-    push    %rbp            #save %rbp       
-    movq    %rsp, %rbp      #bring rbp to the start of this frame
-    sub     $16, %rsp       #make space to the letters that we scan in the stack
+    push    %rbp                        # save %rbp       
+    movq    %rsp, %rbp                  # bring rbp to the start of this frame
+    sub     $16, %rsp                   # make space to the letters that we scan in the stack
     
-    leaq    (%rdi), %r12       #save the pointer to pstring1 in %r12
-    leaq    (%rsi), %r13       #save the pointer to pstring2 in %r13
+    leaq    (%rdi), %r12                # save the pointer to pstring1 in %r12
+    leaq    (%rsi), %r13                # save the pointer to pstring2 in %r13
     
     #get the first letter 
-    movq    $format_char, %rdi  #give the format to scanf on first argument
-    leaq    -16(%rbp), %rsi     #give to scanf the adreess thet he save in the letter
-    xorq    %rax, %rax          #put 0 in %rax
+    movq    $format_char, %rdi          # give the format to scanf on first argument
+    leaq    -16(%rbp), %rsi             # give to scanf the adreess thet he save in the letter
+    xorq    %rax, %rax                  # put 0 in %rax
     call    scanf
     
     #get the second letter 
-    movq     $format_char, %rdi #give the format to scanf on first argument
-    leaq    -8(%rbp), %rsi      #give to scanf the adreess thet he save in the letter
-    xorq    %rax, %rax          #put 0 in %rax
+    movq     $format_char, %rdi         # give the format to scanf on first argument
+    leaq    -8(%rbp), %rsi              # give to scanf the adreess thet he save in the letter
+    xorq    %rax, %rax                  # put 0 in %rax
     call    scanf
     
     #preper the argument to the first call
-    leaq      (%r12), %rdi      # the first argument to replaceChar is *pstring1
-    movzbq    -16(%rbp), %rsi   #the second is the first letter
-    movzbq    -8(%rbp), %rdx    #the third is the second letter
-    call replaceChar            #call replaceChar
+    leaq      (%r12), %rdi              # the first argument to replaceChar is *pstring1
+    movzbq    -16(%rbp), %rsi           # the second is the first letter
+    movzbq    -8(%rbp), %rdx            # the third is the second letter
+    call replaceChar                    # call replaceChar
     
     #preper the argument to the second call
-    leaq      (%r13), %rdi      # the first argument to replaceChar is *pstring2
-    movzbq    -16(%rbp), %rsi   #the second is the first letter
-    movzbq    -8(%rbp), %rdx    #the third is the second letter
-    call replaceChar            #call replaceChar
+    leaq      (%r13), %rdi              # the first argument to replaceChar is *pstring2
+    movzbq    -16(%rbp), %rsi           # the second is the first letter
+    movzbq    -8(%rbp), %rdx            # the third is the second letter
+    call replaceChar                    # call replaceChar
     
     #printing
-    movq $replaceChar_sentence, %rdi    #the format to print
-    movzbq    -16(%rbp), %rsi   # first letter
-    movzbq    -8(%rbp), %rdx    # letter
-    incq    %r12
+    movq $replaceChar_sentence, %rdi    # the format to print
+    movzbq    -16(%rbp), %rsi           # first letter
+    movzbq    -8(%rbp), %rdx            # letter
+    
+    incq    %r12            
     incq    %r13
     movq    %r12, %rcx
     movq    %r13, %r8
-    xorq    %rax, %rax          #put 0 in %rax
-    call printf
+    
+    xorq    %rax, %rax                  # put 0 in %rax
+    call    printf
 
     
-   
-    
-
-    popq %r8        
-    popq %r8
-    movq    %rbp, %rsp      #return #rsp to the start of the frame
-    pop     %rbp            #retun the %rbp to the address that he was before
+    addq    $16, %rsp                   # return the rsp to the start of the frame
+    xorq    %rax, %rax                  # put 0 in %rax - the return value
+    movq    %rbp, %rsp                  # return #rsp to the start of the frame
+    pop     %rbp                        # retun the %rbp to the address that he was before
     jmp .finished
 
 
