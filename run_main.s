@@ -57,6 +57,30 @@ replaceChar:
     movq    %rbp, %rsp          # return #rsp to the start of the frame
     pop     %rbp                # retun the %rbp to the address that he was before
     ret
+  
+  
+.globl  pstrijcpy
+.type   pstrijcpy, @function
+# dest - pstring1 in %rdi, src - pstring2 in %rsi, i - in %rcx, j - %rdx
+pstrijcpy:
+    pushq   %rbp                # prepere the scope to this function
+    movq    %rsp, %rbp
+    
+    cmpq    (%rdi), %rcx        #we check if i is bigger then the length of string1
+    jg .default
+    cmpq    (%rsi), %rcx        #we check if i is bigger then the length of string2
+    jg .default
+    
+    cmpq    (%rdi), %rdx        #we check if j is bigger then the length of string1
+    jg .default
+    cmpq    (%rsi), %rdx        #we check if j is bigger then the length of string2
+    jg .default
+    
+
+    movq    %rbp, %rsp          # return #rsp to the start of the frame
+    pop     %rbp                # retun the %rbp to the address that he was before
+    ret
+    
 
 
 .globl run_func
@@ -145,7 +169,41 @@ run_func:
 
 
 .L_pstrijcpy:
-    movq %rdi, %rsi
+    push    %rbp                        # save %rbp       
+    movq    %rsp, %rbp                  # bring rbp to the start of this frame
+    pushq   %r13
+    pushq   %r12
+    sub     $16, %rsp                   # make space to the letters that we scan in the stack
+    
+    leaq    (%rdi), %r12                # save the pointer to pstring1 in %r12
+    leaq    (%rsi), %r13                # save the pointer to pstring2 in %r13
+    
+    # get the first number
+    movq    $format_int, %rdi
+    leaq    -16(%rbp), %rsi
+    xorq    %rax, %rax
+    call    scanf
+    
+    # get the second number
+    movq    $format_int, %rdi
+    leaq    -8(%rbp), %rsi
+    xorq    %rax, %rax
+    call    scanf
+    
+    leaq    %r12, %rdi
+    leaq    %r13, %rsi
+    movl    -16(%rbp), %edx
+    movl    -8(%rbp), %ecx
+    call    pstrijcpy
+    
+    
+
+    addq    $16, %rsp                   # return the %rsp to the start of the frame
+    pop     %r12                        # return the value of %r12, %rcx to the value that 
+    pop     %r13
+    xorq    %rax, %rax                  # put 0 in %rax - the return value
+    movq    %rbp, %rsp                  # return #rsp to the start of the frame
+    pop     %rbp                        # retun the %rbp to the address that he was before
     jmp .finished
     
 .L_swapCase:
