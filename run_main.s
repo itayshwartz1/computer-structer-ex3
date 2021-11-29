@@ -233,7 +233,8 @@ run_func:
     xorq    %r9, %r9
     xorq    %rsi, %rsi
     movb    (%r10), %sil
-    leaq    1(%r10),%rdx
+    #movb    %r9b, %sil
+    leaq    1(%r12),%rdx
     xorq    %rax, %rax
     call    printf
     
