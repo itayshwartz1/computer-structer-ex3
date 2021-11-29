@@ -4,6 +4,8 @@ format_char:  .string   " %c"
 format_str:   .string   " %s"
 format_int:   .string   " %d"
 pstrlen_sentence: .string "first pstring length: %d, second pstring length: %d\n"
+replaceChar_sentence:   .string "old char: %c, new char: %c, first string: %s, second string: %s\n"
+
 
 #jump table:
 .align 8        #align address to multiple of 8
@@ -33,8 +35,24 @@ pstrlen:
     
 .globl replaceChar
 .type replaceChar, @function
-replaceChar:
-    xorq %rax, %rax
+replaceChar:                # get *pstring %rdi, char1 (old) is in %rsi, char2 (new) in %rdx
+    push    %rbp           
+    movq    %rsp, %rbp
+    
+    movq    %rdi, %rcx
+.loop_replaceChar: 
+    incq %rdi               #now we point to the start of the string
+    cmpb $0, (%rdi)         #compare if we reach to the rnd of the string
+    je  .finish_replaceChar #if so we jump outside the loop and return
+    cmpb %sil, (%rdi)       #we check if the char in the string is equal to char1
+    jne .loop_replaceChar   #if not we continue in the loop
+    movb %dl, (%rdi)        #if yes, we move the char to the location in the string
+    jmp .loop_replaceChar   #we continue in the loop
+    
+.finish_replaceChar:
+    movq    %rcx, %rax
+    movq    %rbp, %rsp      #return #rsp to the start of the frame
+    pop     %rbp            #retun the %rbp to the address that he was before
     ret
 
   
@@ -75,11 +93,11 @@ run_func:
     movq    %rsp, %rbp      #bring rbp to the start of this frame
     sub     $16, %rsp       #make space to the letters that we scan in the stack
     
-    movq    %rdi, %r8       #save the pointer to pstring1 in %r8
-    movq    %rdi, %r9       #save the pointer to pstring2 in %r9
+    leaq    (%rdi), %r12       #save the pointer to pstring1 in %r12
+    leaq    (%rsi), %r13       #save the pointer to pstring2 in %r13
     
     #get the first letter 
-    movq     $format_char, %rdi #give the format to scanf on first argument
+    movq    $format_char, %rdi  #give the format to scanf on first argument
     leaq    -16(%rbp), %rsi     #give to scanf the adreess thet he save in the letter
     xorq    %rax, %rax          #put 0 in %rax
     call    scanf
@@ -90,12 +108,34 @@ run_func:
     xorq    %rax, %rax          #put 0 in %rax
     call    scanf
     
-    movq      %r8, %rdi         # the first argument to replaceChar is *pstring1
+    #preper the argument to the first call
+    leaq      (%r12), %rdi      # the first argument to replaceChar is *pstring1
     movzbq    -16(%rbp), %rsi   #the second is the first letter
     movzbq    -8(%rbp), %rdx    #the third is the second letter
-    call replaceChar #call replaceChar
+    call replaceChar            #call replaceChar
     
-    popq %r8
+    #preper the argument to the second call
+    leaq      (%r13), %rdi      # the first argument to replaceChar is *pstring2
+    movzbq    -16(%rbp), %rsi   #the second is the first letter
+    movzbq    -8(%rbp), %rdx    #the third is the second letter
+    call replaceChar            #call replaceChar
+    
+    #printing
+    movq $replaceChar_sentence, %rdi    #the format to print
+    movzbq    -16(%rbp), %rsi   # first letter
+    movzbq    -8(%rbp), %rdx    # letter
+    incq    %r12
+    incq    %r13
+    movq    %r12, %rcx
+    movq    %r13, %r8
+    xorq    %rax, %rax          #put 0 in %rax
+    call printf
+
+    
+   
+    
+
+    popq %r8        
     popq %r8
     movq    %rbp, %rsp      #return #rsp to the start of the frame
     pop     %rbp            #retun the %rbp to the address that he was before
