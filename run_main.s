@@ -6,6 +6,7 @@ format_str:             .string     " %s"
 format_int:             .string     " %d"
 pstrlen_sentence:       .string     "first pstring length: %d, second pstring length: %d\n"
 replaceChar_sentence:   .string     "old char: %c, new char: %c, first string: %s, second string: %s\n"
+pstrijcpy_sentence:     .string     "length: %d, string: %s\n"
 default_sentence:       .string     "invalid option!\n"
 
 
@@ -66,20 +67,51 @@ pstrijcpy:
     pushq   %rbp                # prepere the scope to this function
     movq    %rsp, %rbp
     
-    cmpq    (%rdi), %rcx        #we check if i is bigger then the length of string1
-    jg .default
-    cmpq    (%rsi), %rcx        #we check if i is bigger then the length of string2
-    jg .default
+    movzbq  (%rdi), %r8         # we get the size of pstring1 to %r8
+    movzbq  (%rsi), %r9         # we get the size of pstring2 to %r9
     
-    cmpq    (%rdi), %rdx        #we check if j is bigger then the length of string1
-    jg .default
-    cmpq    (%rsi), %rdx        #we check if j is bigger then the length of string2
-    jg .default
+    leaq    (%rdi), %r10        #save pointer to the start of %psting1
     
-
+    # checking if the arguments are valid
+    jl      .print_error_pstrijcpy  
+    cmpq    %rcx, %rdx          # we check that i <= j
+    jl      .print_error_pstrijcpy  
+    cmpq    %r8, %rcx           #we check if i is bigger then the length of string1
+    jge      .print_error_pstrijcpy  
+    cmpq    %r9, %rcx           #we check if i is bigger then the length of string2
+    jge      .print_error_pstrijcpy  
+    cmpq    %r8, %rdx           #we check if j is bigger then the length of string1
+    jge      .print_error_pstrijcpy  
+    cmpq    %r9, %rdx           #we check if j is bigger then the length of string2
+    jge      .print_error_pstrijcpy  
+    cmpq    $0, %rcx            # we check of i is smaller than 0
+    jl      .print_error_pstrijcpy  
+    cmpq    $0, %rdx            # we check of j is smaller than 0
+    
+    leaq 1(%rdi, %rcx), %rdi    # go to pstring1[i] (add 1 to skip the length of the pstring1)
+    leaq 1(%rsi, %rcx), %rsi    # go to pstring2[i] (add 1 to skip the length of the pstring2)
+    
+    .while_loop_pstrijcpy:
+    movb    (%rsi), %r11b
+    movb    %r11b, (%rdi)
+    
+    inc     %rdi
+    inc     %rsi
+    inc     %rcx
+    
+    cmpq    %rcx, %rdx
+    jge      .while_loop_pstrijcpy 
+    
+    movq    %r10, %rax          # move the result to the return value
     movq    %rbp, %rsp          # return #rsp to the start of the frame
     pop     %rbp                # retun the %rbp to the address that he was before
+    movq    %r10, %rax          # return the result
     ret
+    
+    .print_error_pstrijcpy:
+    movq    %rbp, %rsp          # return #rsp to the start of the frame
+    pop     %rbp                # retun the %rbp to the address that he was before
+    jmp  .L_default              # return to the finish of the function
     
 
 
@@ -190,12 +222,20 @@ run_func:
     xorq    %rax, %rax
     call    scanf
     
-    leaq    %r12, %rdi
-    leaq    %r13, %rsi
-    movl    -16(%rbp), %edx
-    movl    -8(%rbp), %ecx
+    leaq    (%r12), %rdi
+    leaq    (%r13), %rsi
+    movl    -16(%rbp), %ecx
+    movl    -8(%rbp), %edx
     call    pstrijcpy
+    movq    %rax, %r10
     
+    movq    $pstrijcpy_sentence, %rdi
+    xorq    %r9, %r9
+    xorq    %rsi, %rsi
+    movb    (%r10), %sil
+    leaq    1(%r10),%rdx
+    xorq    %rax, %rax
+    call    printf
     
 
     addq    $16, %rsp                   # return the %rsp to the start of the frame
