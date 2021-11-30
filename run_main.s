@@ -9,6 +9,7 @@ replaceChar_sentence:   .string     "old char: %c, new char: %c, first string: %
 pstrijcpy_sentence:     .string     "length: %d, string: %s\n"
 swapCase_sentence:      .string     "length: %d, string: %s\n"
 pstrijcmp_sentence:     .string     "compare result: %d\n"
+invalid_input_sentence: .string     "invalid input!\n"
 default_sentence:       .string     "invalid option!\n"
 
 
@@ -97,28 +98,28 @@ pstrijcpy:
     
     # loop to copy pstring1[i] to pstring2[i] while i<=j
     .while_loop_pstrijcpy:  
-    movb    (%rsi), %r11b               # take pstring2[i] to %r11b
-    movb    %r11b, (%rdi)               # put in the value to pstring1[i]
+    movb    (%rsi), %r11b                   # take pstring2[i] to %r11b
+    movb    %r11b, (%rdi)                   # put in the value to pstring1[i]
     
-    inc     %rdi                        # increase the point to pstring1
-    inc     %rsi                        # increase the point to pstring2
-    inc     %rcx                        # increase i
+    inc     %rdi                            # increase the point to pstring1
+    inc     %rsi                            # increase the point to pstring2
+    inc     %rcx                            # increase i
     
-    cmpq    %rcx, %rdx                  # we continue the loop while i <= j
+    cmpq    %rcx, %rdx                      # we continue the loop while i <= j
     jge     .while_loop_pstrijcpy 
     
-    pop     %rax                        # move the result from the stack to the return value
-    movq    %rbp, %rsp                  # return #rsp to the start of the frame
-    pop     %rbp                        # retun the %rbp to the address that he was before
+    pop     %rax                            # move the result from the stack to the return value
+    movq    %rbp, %rsp                      # return #rsp to the start of the frame
+    pop     %rbp                            # retun the %rbp to the address that he was before
     ret
     
     .print_error_pstrijcpy:
-    movq    $default_sentence, %rdi     # give the format to print to %rdi
-    xorq    %rax, %rax                  # make %rax to 0
+    movq    $invalid_input_sentence, %rdi   # give the format to print to %rdi
+    xorq    %rax, %rax                      # make %rax to 0
     call    printf
-    pop     %rax                        # move the result to the return value
-    movq    %rbp, %rsp                  # return #rsp to the start of the frame
-    pop     %rbp                        # retun the %rbp to the address that he was before
+    pop     %rax                            # move the result to the return value
+    movq    %rbp, %rsp                      # return #rsp to the start of the frame
+    pop     %rbp                            # retun the %rbp to the address that he was before
     ret
     
 .globl  swapCase
@@ -217,7 +218,7 @@ pstrijcmp:
     ret
     
     .print_error_pstrijcmp:
-    movq    $default_sentence, %rdi     # give the format to print to %rdi
+    movq    $invalid_input_sentence, %rdi     # give the format to print to %rdi
     xorq    %rax, %rax                  # make %rax to 0
     call    printf
     movq    $-2, %rax                   # if we reach here - i or j invalid - so we return -2
