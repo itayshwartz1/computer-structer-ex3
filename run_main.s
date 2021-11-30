@@ -7,6 +7,7 @@ format_int:             .string     " %d"
 pstrlen_sentence:       .string     "first pstring length: %d, second pstring length: %d\n"
 replaceChar_sentence:   .string     "old char: %c, new char: %c, first string: %s, second string: %s\n"
 pstrijcpy_sentence:     .string     "length: %d, string: %s\n"
+swapCase_sentence:      .string     "length: %d, string: %s\n "
 default_sentence:       .string     "invalid option!\n"
 
 
@@ -66,7 +67,6 @@ replaceChar:
 pstrijcpy:
     pushq   %rbp                        # prepere the scope to this function
     movq    %rsp, %rbp                  
-    
     pushq   %rdi                        # save *pstring1 in the stack
     
     movzbq  (%rdi), %r8                 # we get the size of pstring1 to %r8
@@ -114,6 +114,55 @@ pstrijcpy:
     xorq    %rax, %rax                  # make %rax to 0
     call    printf
     pop     %rax                        # move the result to the return value
+    movq    %rbp, %rsp                  # return #rsp to the start of the frame
+    pop     %rbp                        # retun the %rbp to the address that he was before
+    ret
+    
+.globl  swapCase
+.type   swapCase, @function
+# get *pstring in %rdi
+swapCase:
+    pushq   %rbp                        # prepere the scope to this function
+    movq    %rsp, %rbp  
+    
+    leaq    (%rdi), %r8                 # save pointer to the start of the pstring
+    
+    
+    
+    .while_loop_swapCase:
+    inc     %rdi                        # in the first time we skip on the len. next we move to the next char
+    cmpb    $0, (%rdi)                  # we looping until we reach to the end of the string - to '\0'
+    je      .finish_swapCase            # if so we finish the function
+    
+    # checking if is big char
+    cmpb    $65, (%rdi)                 # check if the char is smaller then 'A' = 65
+    jl      .while_loop_swapCase        # if is 
+    cmpb    $90, (%rdi)                 # check if the char is bigger then 'Z' = 90
+    jle     .change_big_char_to_small_char
+    
+    # checking if is small char
+    cmpb    $97, (%rdi)                 # check if the char is smaller then 'a' = 97
+    jl      .while_loop_swapCase
+    cmpb    $122, (%rdi)                # check if the char is bigger then 'z' = 122
+    jle     .change_small_char_to_big_char
+    
+    jmp     .while_loop_swapCase  
+    
+   .change_big_char_to_small_char:  
+    movb    (%rdi), %r9b                # we 
+    add     $32, %r9b
+    movb    %r9b, (%rdi)
+    jmp     .while_loop_swapCase  
+
+   .change_small_char_to_big_char:
+    movb    (%rdi), %r9b
+    sub     $32, %r9b
+    movb    %r9b, (%rdi)
+    jmp     .while_loop_swapCase  
+
+
+    .finish_swapCase:
+    leaq    (%r8), %rax
     movq    %rbp, %rsp                  # return #rsp to the start of the frame
     pop     %rbp                        # retun the %rbp to the address that he was before
     ret
@@ -257,21 +306,44 @@ run_func:
     xorq    %rax, %rax                  # put 0 in %rax - the return value
     movq    %rbp, %rsp                  # return #rsp to the start of the frame
     pop     %rbp                        # retun the %rbp to the address that he was before
-    jmp .finished
+    jmp     .finished
     
 .L_swapCase:
-    movq %rdi, %rsi
-    jmp .finished
+    push    %rbp                        # save %rbp       
+    movq    %rsp, %rbp                  # bring rbp to the start of this frame
+    
+    push    %rsi                        # save the second argument in the stack
+    
+    call    swapCase
+    movq    $swapCase_sentence, %rdi
+    xorq    %rsi, %rsi
+    movb    (%rax), %sil
+    leaq    1(%rax), %rdx
+    xorq    %rax, %rax
+    call    printf
+    
+    pop     %rdi                        #pop *pstring2 to %rdi - the first argument to swapCase
+    call    swapCase
+    movq    $swapCase_sentence, %rdi
+    xorq    %rsi, %rsi
+    movb    (%rax), %sil
+    leaq    1(%rax), %rdx
+    call    printf
+    
+    xorq    %rax, %rax
+    movq    %rbp, %rsp                  # return #rsp to the start of the frame
+    pop     %rbp                        # retun the %rbp to the address that he was before
+    jmp     .finished
 
 .L_pstrijcmp:
     movq %rdi, %rsi
-    jmp .finished
+    jmp     .finished
 
 .L_default:
     movq    $default_sentence, %rdi     # give the format to print to %rdi
     xorq    %rax, %rax                  # make %rax to 0
     call    printf
-    jmp .finished                       # return to the finish of the function
+    jmp     .finished                   # return to the finish of the function
 
 
 
