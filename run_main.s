@@ -219,6 +219,7 @@ pstrijcmp:
     movq    $default_sentence, %rdi     # give the format to print to %rdi
     xorq    %rax, %rax                  # make %rax to 0
     call    printf
+    movq    $-2, %rax
     movq    %rbp, %rsp                  # return #rsp to the start of the frame
     pop     %rbp                        # retun the %rbp to the address that he was before
     ret
