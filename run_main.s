@@ -149,17 +149,12 @@ swapCase:
     jmp     .while_loop_swapCase  
     
    .change_big_char_to_small_char:  
-    movb    (%rdi), %r9b                # we 
-    add     $32, %r9b
-    movb    %r9b, (%rdi)
+    add     $32, (%rdi)
     jmp     .while_loop_swapCase  
 
    .change_small_char_to_big_char:
-    movb    (%rdi), %r9b
-    sub     $32, %r9b
-    movb    %r9b, (%rdi)
+    sub     $32, (%rdi)
     jmp     .while_loop_swapCase  
-
 
     .finish_swapCase:
     leaq    (%r8), %rax
@@ -167,7 +162,6 @@ swapCase:
     pop     %rbp                        # retun the %rbp to the address that he was before
     ret
     
-
 
 .globl run_func
 .type run_func, @function
@@ -309,11 +303,10 @@ run_func:
     jmp     .finished
     
 .L_swapCase:
-    push    %rbp                        # save %rbp       
+    pushq    %rbp                       # save %rbp       
     movq    %rsp, %rbp                  # bring rbp to the start of this frame
     
     push    %rsi                        # save the second argument in the stack
-    
     call    swapCase
     movq    $swapCase_sentence, %rdi
     xorq    %rsi, %rsi
@@ -322,15 +315,15 @@ run_func:
     xorq    %rax, %rax
     call    printf
     
-    pop     %rdi                        #pop *pstring2 to %rdi - the first argument to swapCase
+    popq     %rdi                        #pop *pstring2 to %rdi - the first argument to swapCase
     call    swapCase
     movq    $swapCase_sentence, %rdi
     xorq    %rsi, %rsi
     movb    (%rax), %sil
     leaq    1(%rax), %rdx
+    xorq    %rax, %rax
     call    printf
     
-    xorq    %rax, %rax
     movq    %rbp, %rsp                  # return #rsp to the start of the frame
     pop     %rbp                        # retun the %rbp to the address that he was before
     jmp     .finished
