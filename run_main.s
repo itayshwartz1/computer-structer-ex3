@@ -191,25 +191,26 @@ pstrijcmp:
     jl      .print_error_pstrijcmp  
 
     
-    leaq    (%rdi, %rdx), %rdi         # go to pstring1[i-1]
-    leaq    (%rsi, %rdx), %rsi         # go to pstring2[i-1]
+    leaq    (%rdi, %rdx), %rdi          # go to pstring1[i-1]
+    leaq    (%rsi, %rdx), %rsi          # go to pstring2[i-1]
     
-    xorq    %rax, %rax
-    movl    $1, %r8d
-    movl    $-1, %r9d
+    xorq    %rax, %rax                  # we make %rax 0 - its the defoult result. if there is some changes - we change it
+    movl    $1, %r8d                    # we put the result 1 in %r8d
+    movl    $-1, %r9d                   # we put the result -1 in %r9d
+    
+    # looping on the strings while i <=j
     .while_loop_pstrijcmp:
-    cmpq    %rdx,   %rcx
+    cmpq    %rdx,   %rcx                # we check if i > j. if so we go to .finish_pstrijcmp
     jl      .finish_pstrijcmp
-    incq    %rdi
+    incq    %rdi                        # increase pstring1 and pstring2 to fo to the next char
     incq    %rsi
-    incq    %rcx
-    movzbq  (%rdi), %r10
-    cmpb    (%rsi), %r10b
-    je      .while_loop_pstrijcmp 
-    cmovg   %r8, %rax             #if i>j
-    cmovl   %r9, %rax             #if i<j
+    incq    %rcx                        # increase i by 1
+    movzbq  (%rdi), %r10                # get pstring1[i] to %r10d
+    cmpb    (%rsi), %r10b               # compare between pstring1[i] to pstring2[i]
+    je      .while_loop_pstrijcmp       # if thier equal - we continue the loop
+    cmovg   %r8, %rax                   # if i > j we put 1 in the result
+    cmovl   %r9, %rax                   # if i < j we put -1 in the result
 
-   
     .finish_pstrijcmp:
     movq    %rbp, %rsp                  # return #rsp to the start of the frame
     pop     %rbp                        # retun the %rbp to the address that he was before
@@ -219,7 +220,7 @@ pstrijcmp:
     movq    $default_sentence, %rdi     # give the format to print to %rdi
     xorq    %rax, %rax                  # make %rax to 0
     call    printf
-    movq    $-2, %rax
+    movq    $-2, %rax                   # if we reach here - i or j invalid - so we return -2
     movq    %rbp, %rsp                  # return #rsp to the start of the frame
     pop     %rbp                        # retun the %rbp to the address that he was before
     ret
