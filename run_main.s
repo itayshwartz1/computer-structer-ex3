@@ -7,8 +7,10 @@ format_int:             .string     " %d"
 pstrlen_sentence:       .string     "first pstring length: %d, second pstring length: %d\n"
 replaceChar_sentence:   .string     "old char: %c, new char: %c, first string: %s, second string: %s\n"
 pstrijcpy_sentence:     .string     "length: %d, string: %s\n"
-swapCase_sentence:      .string     "length: %d, string: %s\n "
+swapCase_sentence:      .string     "length: %d, string: %s\n"
+pstrijcmp_sentence:     .string     "compare result: %d\n"
 default_sentence:       .string     "invalid option!\n"
+
 
 
 
@@ -74,7 +76,6 @@ pstrijcpy:
     
     
     # checking if the arguments are valid
-    jl      .print_error_pstrijcpy  
     cmpq    %rcx, %rdx                  # we check that i <= j
     jl      .print_error_pstrijcpy  
     cmpq    %r8, %rcx                   # we check if i is bigger then the length of string1
@@ -86,8 +87,10 @@ pstrijcpy:
     cmpq    %r9, %rdx                   # we check if j is bigger then the length of string2
     jge      .print_error_pstrijcpy  
     cmpq    $0, %rcx                    # we check of i is smaller than 0
-    jl      .print_error_pstrijcpy  
+    jl       .print_error_pstrijcpy  
     cmpq    $0, %rdx                    # we check of j is smaller than 0
+    jl       .print_error_pstrijcpy  
+
     
     leaq    1(%rdi, %rcx), %rdi         # go to pstring1[i] (add 1 to skip the length of the pstring1)
     leaq    1(%rsi, %rcx), %rsi         # go to pstring2[i] (add 1 to skip the length of the pstring2)
@@ -127,8 +130,6 @@ swapCase:
     
     leaq    (%rdi), %r8                 # save pointer to the start of the pstring
     
-    
-    
     .while_loop_swapCase:
     inc     %rdi                        # in the first time we skip on the len. next we move to the next char
     cmpb    $0, (%rdi)                  # we looping until we reach to the end of the string - to '\0'
@@ -158,6 +159,66 @@ swapCase:
 
     .finish_swapCase:
     leaq    (%r8), %rax
+    movq    %rbp, %rsp                  # return #rsp to the start of the frame
+    pop     %rbp                        # retun the %rbp to the address that he was before
+    ret
+    
+.globl  pstrijcmp
+.type   pstrijcmp, @function
+# pstring1 in %rdi, pstring2 in %rsi, i - in %rdx, j - %rcx
+pstrijcmp:
+    pushq   %rbp                        # prepere the scope to this function
+    movq    %rsp, %rbp      
+    
+    movzbq  (%rdi), %r8                 # we get the size of pstring1 to %r8
+    movzbq  (%rsi), %r9                 # we get the size of pstring2 to %r9
+    
+    
+    # checking if the arguments are valid
+    cmpq    %rdx, %rcx                  # we check that i <= j
+    jl      .print_error_pstrijcmp  
+    cmpq    %r8, %rcx                   # we check if i is bigger then the length of string1
+    jge      .print_error_pstrijcmp  
+    cmpq    %r9, %rcx                   # we check if i is bigger then the length of string2
+    jge      .print_error_pstrijcmp  
+    cmpq    %r8, %rdx                   # we check if j is bigger then the length of string1
+    jge      .print_error_pstrijcmp  
+    cmpq    %r9, %rdx                   # we check if j is bigger then the length of string2
+    jge      .print_error_pstrijcmp  
+    cmpq    $0, %rcx                    # we check of i is smaller than 0
+    jl      .print_error_pstrijcmp  
+    cmpq    $0, %rdx                    # we check of j is smaller than 0
+    jl      .print_error_pstrijcmp  
+
+    
+    leaq    (%rdi, %rdx), %rdi         # go to pstring1[i-1]
+    leaq    (%rsi, %rdx), %rsi         # go to pstring2[i-1]
+    
+    xorq    %rax, %rax
+    movl    $1, %r8d
+    movl    $-1, %r9d
+    .while_loop_pstrijcmp:
+    cmpq    %rdx,   %rcx
+    jl      .finish_pstrijcmp
+    incq    %rdi
+    incq    %rsi
+    incq    %rcx
+    movzbq  (%rdi), %r10
+    cmpb    (%rsi), %r10b
+    je      .while_loop_pstrijcmp 
+    cmovg   %r8, %rax             #if i>j
+    cmovl   %r9, %rax             #if i<j
+
+   
+    .finish_pstrijcmp:
+    movq    %rbp, %rsp                  # return #rsp to the start of the frame
+    pop     %rbp                        # retun the %rbp to the address that he was before
+    ret
+    
+    .print_error_pstrijcmp:
+    movq    $default_sentence, %rdi     # give the format to print to %rdi
+    xorq    %rax, %rax                  # make %rax to 0
+    call    printf
     movq    %rbp, %rsp                  # return #rsp to the start of the frame
     pop     %rbp                        # retun the %rbp to the address that he was before
     ret
@@ -292,8 +353,7 @@ run_func:
     leaq    1(%r13),%rdx                # give the address to %rdx, but jump 1 address to get the string (skip on the length)
     xorq    %rax, %rax                  # make %rax 0
     call    printf                      # print the data
-    
-        
+       
     addq    $16, %rsp                   # return the %rsp to the start of the frame
     pop     %r12                        # return the value of %r12, %rcx to the value that 
     pop     %r13
@@ -329,7 +389,42 @@ run_func:
     jmp     .finished
 
 .L_pstrijcmp:
-    movq %rdi, %rsi
+    pushq   %rbp                       # save %rbp       
+    movq    %rsp, %rbp                  # bring rbp to the start of this frame
+    subq    $16, %rsp                   # make space to two int in the stack
+    push    %rdi                        # save the second argument in the stack
+    push    %rsi                        # save the second argument in the stack
+    
+    # get the first number
+    movq    $format_int, %rdi           # give the format to scanf
+    leaq    -16(%rbp), %rsi             # the address to save the data from scanf
+    xorq    %rax, %rax                  # make %rax 0
+    call    scanf
+    
+    # get the second number
+    movq    $format_int, %rdi           # give the format to scanf
+    leaq    -8(%rbp), %rsi              # the address to save the data from scanf
+    xorq    %rax, %rax                  # make %rax 0
+    call    scanf
+    
+    popq    %rsi
+    popq    %rdi
+    movl    -16(%rbp), %edx             # the first number to pstrijcpy as third argument
+    movl    -8(%rbp), %ecx              # the second number to pstrijcpy as fourth argument
+    
+    #movq    -32(%rbp),%rsi
+    #movq    -24(%rbp),%rdi
+    #movl    -16(%rbp), %edx             # the first number to pstrijcpy as third argument
+    #movl    -8(%rbp), %ecx              # the second number to pstrijcpy as fourth argument
+    call    pstrijcmp
+    
+    movq    $pstrijcmp_sentence, %rdi
+    movq    %rax, %rsi
+    xorq    %rax, %rax
+    call    printf
+
+    movq    %rbp, %rsp                  # return #rsp to the start of the frame
+    pop     %rbp                        # retun the %rbp to the address that he was before
     jmp     .finished
 
 .L_default:
